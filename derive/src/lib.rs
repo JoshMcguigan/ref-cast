@@ -104,11 +104,24 @@ fn only_field_ty(input: &DeriveInput) -> Result<&Type> {
         }
     };
 
-    // TODO: support structs that have trivial other fields like `()` or
-    // `PhantomData`.
-    if fields.len() != 1 {
+    let non_trivial_field_count = fields
+        .iter()
+        .filter(|field| !is_trivial_type(&field.ty))
+        .count();
+
+    if non_trivial_field_count != 1 {
         return Err("RefCast requires a struct with a single field");
     }
-
+    // todo this should consider that the non-trivial field may not be the first field
     Ok(&fields[0].ty)
+}
+
+// todo support PhantomData
+fn is_trivial_type(ty: &Type) -> bool {
+    match ty {
+        Type::Tuple(ty_tuple) => {
+            ty_tuple.elems.len() == 0
+        },
+        _ => false,
+    }
 }

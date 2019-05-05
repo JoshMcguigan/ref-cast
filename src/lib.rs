@@ -136,7 +136,9 @@
 pub use ref_cast_impl::*;
 
 /// Safely cast `&T` to `&U` where the struct `U` contains a single field of
-/// type `T`.
+/// type `T`, or the struct `U` contains a single field of type `T` and one 
+/// or more other fields which are all trivial types (`()` or `PhantomData`
+/// for example).
 ///
 /// ```
 /// # use ref_cast::RefCast;
@@ -146,10 +148,14 @@ pub use ref_cast_impl::*;
 /// #[repr(transparent)]
 /// struct U(String);
 ///
+/// #[derive(RefCast)]
+/// #[repr(C)]
+/// struct V(String, ());
+///
 /// // `&T` can be cast to `&V<T>`.
 /// #[derive(RefCast)]
 /// #[repr(transparent)]
-/// struct V<T> {
+/// struct W<T> {
 ///     t: T,
 /// }
 /// #
@@ -161,4 +167,21 @@ pub trait RefCast {
     type From: ?Sized;
     fn ref_cast(from: &Self::From) -> &Self;
     fn ref_cast_mut(from: &mut Self::From) -> &mut Self;
+}
+
+#[cfg(test)]
+mod tests {
+    use ref_cast_impl::RefCast;
+
+    #[test]
+    fn trivial_field_first() {
+
+        #[derive(RefCast)]
+        #[repr(transparent)]
+        struct U((), String);
+
+        let s = String::new();
+        // Safely cast from `&String` to `&U`.
+        let u = U::ref_cast(&s);
+    }
 }
